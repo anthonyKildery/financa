@@ -1,0 +1,110 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard de Inadimplência</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="t-l">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M3 3h18v4H3zm0 6h12v4H3zm0 6h15v4H3z"/></svg></div>
+    <span class="ttitle">Gestão de Recebíveis</span>
+  </div>
+  <div class="t-r">
+    <button class="btn-g" id="themeBtn">
+      <span id="themeIco">☀️</span><span id="themeLbl">Modo Claro</span>
+    </button>
+    <button class="btn-p" onclick="$('#fi').click()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Importar CSV
+    </button>
+    <input type="file" id="fi" accept=".csv">
+  </div>
+</div>
+
+<div class="tabbar">
+  <div class="tab active" data-tab="ov">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Visão Geral
+  </div>
+  <div class="tab" data-tab="d30">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    +30 dias
+    <span class="tbadge" id="b30" style="background:var(--accent-s);color:var(--accent)">0</span>
+  </div>
+  <div class="tab" data-tab="d60">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    +60 dias
+    <span class="tbadge" id="b60" style="background:var(--orange-s);color:var(--orange)">0</span>
+  </div>
+  <div class="tab" data-tab="d120">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    +120 dias
+    <span class="tbadge" id="b120">0</span>
+  </div>
+</div>
+
+<!-- DATE FILTER BAR -->
+<div class="dfbar" id="dfbar">
+  <div class="dflabel">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Filtrar por vencimento
+  </div>
+  <div class="dfgroup">
+    <input type="date" class="dfinput" id="df-from" oninput="onDateInput()">
+    <span class="dfsep">até</span>
+    <input type="date" class="dfinput" id="df-to" oninput="onDateInput()">
+  </div>
+  <div class="dfquick">
+    <button class="dfqbtn" id="dq-3m" onclick="setQuick('3m')">3 meses</button>
+    <button class="dfqbtn" id="dq-6m" onclick="setQuick('6m')">6 meses</button>
+    <button class="dfqbtn" id="dq-1a" onclick="setQuick('1a')">1 ano</button>
+    <button class="dfqbtn" id="dq-2a" onclick="setQuick('2a')">2 anos</button>
+    <button class="dfqbtn" id="dq-all" onclick="setQuick('all')">Todos</button>
+  </div>
+  <button class="dfclear" id="df-clear" onclick="clearDateFilter()">✕ Limpar filtro</button>
+  <span class="dfrange-info" id="df-range-info"></span>
+</div>
+
+<div class="wrap">
+  <div class="tc active" id="tab-ov">
+    <div id="ov-body">
+      <div class="upload-area" id="drop-zone" onclick="$('#fi').click()">
+        <div class="ua-icon">📊</div>
+        <div class="ua-title">Importe seu arquivo CSV</div>
+        <div class="ua-desc">Clique aqui ou arraste o arquivo exportado do sistema para visualizar o dashboard de inadimplência</div>
+        <button class="btn-p" style="margin:0 auto" onclick="event.stopPropagation();$('#fi').click()">Selecionar arquivo CSV</button>
+        <div class="ua-hint">Codificação ISO-8859-1 · Separador ponto e vírgula (;)</div>
+      </div>
+      <div class="hint-box">
+        <b>📋 Colunas esperadas no CSV</b>
+        Nome · CNPJ/CPF · Status (Baixado / Vencido / Cancelado) · Data de Vencimento · Dias em Atraso · Valor Original · Valor Baixado · Histórico · Situação Atual
+      </div>
+    </div>
+  </div>
+  <div class="tc" id="tab-d30"><div id="det-body-30"><div class="upload-area" onclick="$('#fi').click()" style="margin-top:0"><div class="ua-icon">📋</div><div class="ua-title">Nenhum dado carregado</div><div class="ua-desc">Importe um CSV para visualizar os inadimplentes.</div><button class="btn-p" style="margin:0 auto" onclick="event.stopPropagation();$('#fi').click()">Importar CSV</button></div></div></div>
+  <div class="tc" id="tab-d60"><div id="det-body-60"><div class="upload-area" onclick="$('#fi').click()" style="margin-top:0"><div class="ua-icon">📋</div><div class="ua-title">Nenhum dado carregado</div><div class="ua-desc">Importe um CSV para visualizar os inadimplentes.</div><button class="btn-p" style="margin:0 auto" onclick="event.stopPropagation();$('#fi').click()">Importar CSV</button></div></div></div>
+  <div class="tc" id="tab-d120"><div id="det-body-120"><div class="upload-area" onclick="$('#fi').click()" style="margin-top:0"><div class="ua-icon">📋</div><div class="ua-title">Nenhum dado carregado</div><div class="ua-desc">Importe um CSV para visualizar os inadimplentes.</div><button class="btn-p" style="margin:0 auto" onclick="event.stopPropagation();$('#fi').click()">Importar CSV</button></div></div></div>
+</div>
+
+<div class="gmodal" id="general-modal">
+  <div class="gmodal-card">
+    <div class="gmodal-head">
+      <strong>Tabelas Gerais dos Cards</strong>
+      <button class="gmodal-close" id="general-modal-close" type="button">✕</button>
+    </div>
+    <div class="gmodal-body" id="general-modal-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="main.js"></script>
+</body>
+</html>
